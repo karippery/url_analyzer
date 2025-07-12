@@ -1,4 +1,3 @@
-// src/components/AuthForm.tsx
 import React from 'react';
 import styled from 'styled-components';
 import { theme } from '../../theme';
@@ -10,6 +9,10 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: ${theme.spacing.md};
+  max-width: 400px; /* Constrain form width */
+  margin: 0 auto; /* Center the form */
+  width: auto; /* Allow form to size based on content */
+  padding: ${theme.spacing.md}; /* Add padding for better spacing */
 `;
 
 const Title = styled.h2`
@@ -54,6 +57,7 @@ const AuthForm: React.FC<AuthFormProps> = ({
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
+          size="md" // Explicitly set to 300px width
         />
         <InputBox
           type="password"
@@ -61,6 +65,7 @@ const AuthForm: React.FC<AuthFormProps> = ({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          size="md" // Explicitly set to 300px width
         />
         <Button type="submit" isLoading={isLoading}>
           {isLoading ? `${buttonText}ing...` : buttonText}

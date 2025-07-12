@@ -1,26 +1,49 @@
-import styled from 'styled-components';
-import { theme } from '../theme';
+import { Box, Typography } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import muiTheme from '../muiTheme';
 
-export const PageWrapper = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: ${theme.spacing.lg};
+export const PageWrapper = ({ children }: { children: React.ReactNode }) => (
+  <ThemeProvider theme={muiTheme}>
+    <Box
+      sx={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: (theme) => theme.spacing(2), // Maps to theme.spacing.lg
+        '@media (max-width: 768px)': {
+          padding: (theme) => theme.spacing(1), // Maps to theme.spacing.md
+        },
+      }}
+    >
+      {children}
+    </Box>
+  </ThemeProvider>
+);
 
-  @media (max-width: 768px) {
-    padding: ${theme.spacing.md};
-  }
-`;
+export const Section = ({ children }: { children: React.ReactNode }) => (
+  <Box component="section" sx={{ marginBottom: (theme) => theme.spacing(2) }}>
+    {children}
+  </Box>
+);
 
-export const Section = styled.section`
-  margin-bottom: ${theme.spacing.lg};
-`;
+export const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <Typography
+    variant="h2"
+    sx={{
+      marginBottom: (theme) => theme.spacing(1),
+    }}
+  >
+    {children}
+  </Typography>
+);
 
-export const SectionTitle = styled.h2`
-  font-size: ${theme.fontSizes.lg};
-  color: ${theme.colors.navy};
-  margin-bottom: ${theme.spacing.md};
-`;
-
-export const Spacer = styled.div<{ size?: keyof typeof theme.spacing }>`
-  height: ${(props) => theme.spacing[props.size || 'md']};
-`;
+export const Spacer = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => (
+  <Box
+    sx={{
+      height: (theme) => ({
+        sm: theme.spacing(0.5),
+        md: theme.spacing(1),
+        lg: theme.spacing(2),
+      })[size],
+    }}
+  />
+);

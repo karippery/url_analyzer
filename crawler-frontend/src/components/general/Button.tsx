@@ -1,40 +1,39 @@
-import styled from 'styled-components';
+import { Button as MuiButton, CircularProgress } from '@mui/material';
 import { theme } from '../../theme';
 
-const StyledButton = styled.button`
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
-  font-size: ${theme.fontSizes.md};
-  color: ${theme.colors.background};
-  background: ${theme.colors.primary};
-  border: none;
-  border-radius: ${theme.borderRadius.sm};
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: ${theme.colors.primaryDark};
-  }
-
-  &:disabled {
-    background: ${theme.colors.border};
-    cursor: not-allowed;
-  }
-`;
 
 interface ButtonProps {
-  type: 'button' | 'submit' | 'reset';
-  disabled?: boolean;
-  isLoading?: boolean;
+  type?: 'button' | 'submit' | 'reset';
   children: React.ReactNode;
+  isLoading?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
 }
 
-const Button: React.FC<ButtonProps> = ({ type, disabled, isLoading, children, onClick }) => {
-  return (
-    <StyledButton type={type} disabled={disabled || isLoading} onClick={onClick}>
-      {children}
-    </StyledButton>
-  );
-};
+const Button: React.FC<ButtonProps> = ({ type = 'button', children, isLoading, disabled, onClick }) => (
+  <MuiButton
+    type={type}
+    variant="contained"
+    disabled={disabled || isLoading}
+    onClick={onClick}
+    sx={{
+      padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+      fontSize: theme.fontSizes.sm,
+      color: theme.colors.background,
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadius.sm,
+      '&:hover': {
+        backgroundColor: theme.colors.primaryDark,
+      },
+      '&.Mui-disabled': {
+        backgroundColor: `${theme.colors.primary}80`,
+        color: `${theme.colors.background}80`,
+      },
+    }}
+    startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : null}
+  >
+    {children}
+  </MuiButton>
+);
 
 export default Button;

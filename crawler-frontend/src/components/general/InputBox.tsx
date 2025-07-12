@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import { TextField } from '@mui/material';
 import { theme } from '../../theme';
 
 interface InputBoxProps {
@@ -7,18 +7,18 @@ interface InputBoxProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
-  size?: 'sm' | 'md' | 'lg' | 'full'; // New size prop
-  disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg' | 'full';
 }
 
-const Input = styled.input<InputBoxProps>`
-  padding: ${theme.spacing.sm};
-  font-size: ${theme.fontSizes.md};
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.borderRadius.sm};
-  outline: none;
-  transition: border-color 0.2s;
-  width: ${({ size }) => {
+const InputBox: React.FC<InputBoxProps> = ({
+  type,
+  placeholder,
+  value,
+  onChange,
+  required,
+  size,
+}) => {
+  const getWidth = () => {
     switch (size) {
       case 'sm':
         return '200px';
@@ -27,30 +27,42 @@ const Input = styled.input<InputBoxProps>`
       case 'lg':
         return '500px';
       case 'full':
-        return '100%';
       default:
-        return '100%'; // Default to full width for backward compatibility
+        return '100%';
     }
-  }};
+  };
 
-  &:focus {
-    border-color: ${theme.colors.primary};
-  }
-
-  @media (max-width: 768px) {
-    width: 100%; /* Full width on mobile for all sizes */
-  }
-`;
-
-const InputBox: React.FC<InputBoxProps> = ({ type, placeholder, value, onChange, required, size }) => {
   return (
-    <Input
+    <TextField
       type={type}
       placeholder={placeholder}
       value={value}
       onChange={onChange}
       required={required}
-      size={size}
+      fullWidth={size === 'full'}
+      variant="outlined"
+      sx={{
+        width: getWidth(),
+        '& .MuiInputBase-root': {
+          height: '36px',
+          padding: '0 12px',
+          fontSize: theme.fontSizes.md,
+          borderRadius: theme.borderRadius.sm,
+        },
+        '& input': {
+          padding: 0,
+          height: '100%',
+        },
+        '& .MuiOutlinedInput-notchedOutline': {
+          borderColor: theme.colors.border,
+        },
+        '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
+          borderColor: theme.colors.primary,
+        },
+        '@media (max-width: 768px)': {
+          width: '100%',
+        },
+      }}
     />
   );
 };
