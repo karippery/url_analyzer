@@ -1,0 +1,82 @@
+# Binaries and executables
+/bin/
+/crawler
+/url-analyzer
+*.exe
+*.out
+
+# Dependency directories
+/vendor/
+/go.sum
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.code-workspace
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+
+# Build output
+/dist/
+/build/
+*.dll
+*.so
+*.a
+
+# Test artifacts
+coverage.txt
+*.test
+/test-results/
+
+# Log files
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker artifacts
+docker-compose.override.yml
+*.dockerignore
+
+# Database files
+*.db
+*.sqlite
+/dbdata/
+
+# Development artifacts
+debug
+pprof/
+*.prof
+*.mem
+*.cpu
+
+# Editor temporary files
+*~
+\#*
+.\#*
+
+# Go workspace file
+go.work
+
+# Binary output when using go install
+*.exe~
+*.exe~
+
+# JetBrains IDE specific files
+*.iml
+
+# macOS system files
+.DS_Store?

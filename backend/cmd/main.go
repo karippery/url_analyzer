@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"url_analyzer/backend/auth"
 	"url_analyzer/backend/handlers"
 	"url_analyzer/backend/models"
 	"url_analyzer/backend/repository"
@@ -12,35 +13,44 @@ import (
 	"gorm.io/gorm"
 )
 
-
 func main() {
-	// Initialize database
+	// Database setup
 	dsn := "user:password@tcp(db:3306)/url_analyzer?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// Migrate the schema
-	if err := db.AutoMigrate(&models.CrawlRequest{}, &models.CrawlResult{}); err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
-	}
+	// Migrate models
+	db.AutoMigrate(&models.User{}, &models.TokenPair{}, &models.CrawlRequest{}, &models.CrawlResult{})
 
-	// Initialize repository
+	// Initialize services
+	authService := auth.NewAuthService()
 	repo := repository.NewDBRepository(db)
-
-	// Initialize and start worker
 	worker := worker.NewWorker(repo)
 	worker.Start()
 
-	// Initialize HTTP server
-	handler := handlers.NewHandler(repo)
+	// Initialize handlers
+	mainHandler := handlers.NewHandler(repo)
+	authHandler := handlers.NewAuthHandler(db, authService)
 
+	// Create router
 	r := gin.Default()
 
-	r.POST("/api/crawl", handler.SubmitURL)
-	r.GET("/api/results", handler.GetResults)
+	// Auth routes
+	r.POST("/api/register", authHandler.Register)
+	r.POST("/api/login", authHandler.Login)
+	r.POST("/api/refresh", authHandler.Refresh)
 
+	// Protected routes
+	protected := r.Group("/api")
+	protected.Use(auth.JWTMiddleware(authService)) // Your JWT middleware
+	{
+		protected.POST("/crawl", mainHandler.SubmitURL)
+		protected.GET("/results", mainHandler.GetResults)
+	}
+
+	// Start server
 	if err := r.Run(":8080"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
