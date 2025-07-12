@@ -4,7 +4,6 @@ import { theme } from '../theme';
 import { Result } from '../api/crawler';
 import DetailsModal from './DetailsModal';
 import { Spacer } from './Layout';
-import InputBox from './general/InputBox';
 import Button from './general/Button';
 
 const TableContainer = styled.div`
@@ -71,56 +70,32 @@ const Pagination = styled.div`
   margin-top: ${theme.spacing.md};
 `;
 
-interface BrokenLink {
-  url: string;
-  status: number;
-}
-
-interface ExtendedResult extends Result {
-  broken_links_details?: BrokenLink[];
-}
-
 interface TableProps {
-  results: ExtendedResult[];
-  onSort: (column: keyof ExtendedResult) => void;
-  onFilter: (query: string) => void;
+  results: Result[];
   onPageChange: (page: number) => void;
   page: number;
-  size: number;
-  total: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
-const Table: React.FC<TableProps> = ({ results, onSort, onFilter, onPageChange, page, size, total }) => {
-  const [sortColumn, setSortColumn] = useState<keyof ExtendedResult | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [selectedResult, setSelectedResult] = useState<ExtendedResult | null>(null);
-
-  const handleSort = (column: keyof ExtendedResult) => {
-    const newDirection = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
-    setSortColumn(column);
-    setSortDirection(newDirection);
-    onSort(column);
-  };
+const Table: React.FC<TableProps> = ({ results, onPageChange, page, pageSize, totalItems, totalPages, hasNext, hasPrev }) => {
+  const [selectedResult, setSelectedResult] = useState<Result | null>(null);
 
   return (
     <TableContainer>
-      <InputBox
-        type="text"
-        placeholder="Search by title..."
-        value=""
-        onChange={(e) => onFilter(e.target.value)}
-        size="md"
-      />
       <Spacer size="md" />
       <StyledTable>
         <thead>
           <tr>
-            <Th onClick={() => handleSort('title')}>Title</Th>
-            <Th onClick={() => handleSort('html_version')}>HTML Version</Th>
-            <Th onClick={() => handleSort('internal_links')}>Internal Links</Th>
-            <Th onClick={() => handleSort('external_links')}>External Links</Th>
-            <Th onClick={() => handleSort('broken_links')}>Broken Links</Th>
-            <Th onClick={() => handleSort('created_at')}>Created At</Th>
+            <Th>Title</Th>
+            <Th>HTML Version</Th>
+            <Th>Internal Links</Th>
+            <Th>External Links</Th>
+            <Th>Broken Links</Th>
+            <Th>Created At</Th>
           </tr>
         </thead>
         <tbody>
@@ -140,15 +115,15 @@ const Table: React.FC<TableProps> = ({ results, onSort, onFilter, onPageChange, 
       <Pagination>
         <Button
           type="button"
-          disabled={page === 1}
+          disabled={!hasPrev}
           onClick={() => onPageChange(page - 1)}
         >
           Previous
         </Button>
-        <span>Page {page} of {Math.ceil(total / size)}</span>
+        <span>Page {page} of {totalPages} ({totalItems} items)</span>
         <Button
           type="button"
-          disabled={page * size >= total}
+          disabled={!hasNext}
           onClick={() => onPageChange(page + 1)}
         >
           Next

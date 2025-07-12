@@ -1,44 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { theme } from '../theme';
 import InputBox from '../components/general/InputBox';
 import Button from '../components/general/Button';
 import Message from '../components/general/Message';
 import Table from '../components/Table';
-import { crawl, getResults } from '../api/crawler';
+import { crawl, getResults, refreshToken, Result } from '../api/crawler';
 import { PageWrapper, Section, SectionTitle, Spacer } from '../components/Layout';
-
-interface BrokenLink {
-  url: string;
-  status: number;
-}
-
-interface ExtendedResult {
-  id: number;
-  crawl_request_id: number;
-  html_version: string;
-  title: string;
-  h1_count: number;
-  h2_count: number;
-  h3_count: number;
-  h4_count: number;
-  h5_count: number;
-  h6_count: number;
-  internal_links: number;
-  external_links: number;
-  broken_links: number;
-  broken_links_details?: BrokenLink[];
-  has_login_form: boolean;
-  processing_time: number;
-  created_at: string;
-}
-
-interface ResultsResponse {
-  data: ExtendedResult[];
-  page: number;
-  size: number;
-  total?: number; // Made optional to match possible missing property
-}
 
 const DashboardContainer = styled.div`
   min-height: 100vh;
@@ -102,65 +70,115 @@ const DashboardPage: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<ExtendedResult[]>([]);
+  const [results, setResults] = useState<Result[]>([]);
   const [page, setPage] = useState(1);
-  const [size] = useState(10);
-  const [total, setTotal] = useState(0);
+  const [pageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
+  const [latestCrawlId, setLatestCrawlId] = useState<number | null>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [token, setToken] = useState<string>(localStorage.getItem('access_token') || '');
 
-  const fetchResults = async (newPage: number = page) => {
+  const fetchResults = async (newPage: number = page): Promise<Result[]> => {
     try {
-      const token = localStorage.getItem('access_token') || '';
-      const data: ResultsResponse = await getResults(newPage, size, token);
+      const data = await getResults(newPage, pageSize, token);
       setResults(data.data);
-      setTotal(data.total ?? 0);
-      setPage(data.page);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch results');
+      setPage(data.pagination.currentPage);
+      setTotalItems(data.pagination.totalItems);
+      setTotalPages(data.pagination.totalPages);
+      setHasNext(data.pagination.hasNext);
+      setHasPrev(data.pagination.hasPrev);
+      return data.data; // Return results for polling
+    } catch (err: any) {
+      if (err.cause?.status === 401) {
+        try {
+          const refreshTokenStr = localStorage.getItem('refresh_token') || '';
+          const newTokens = await refreshToken(refreshTokenStr);
+          localStorage.setItem('access_token', newTokens.access_token);
+          localStorage.setItem('refresh_token', newTokens.refresh_token);
+          setToken(newTokens.access_token);
+          return await fetchResults(newPage); // Retry with new token
+        } catch (refreshErr) {
+          setError('Session expired. Please log in again.');
+          setTimeout(() => {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/login';
+          }, 5000);
+          stopPolling();
+        }
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to fetch results');
+        setTimeout(() => setError(''), 5000);
+      }
+      return [];
+    }
+  };
+
+  const pollResults = (crawlId: number) => {
+    setLatestCrawlId(crawlId);
+    let pollCount = 0;
+    const maxPolls = 8; // 16 seconds max (8 * 2s), covering 3–10s crawl time
+    pollIntervalRef.current = setInterval(async () => {
+      pollCount++;
+      try {
+        const results = await fetchResults(1);
+        if (results.some((result: Result) => result.crawl_request_id === crawlId)) {
+          setSuccess('Crawl completed successfully');
+          setTimeout(() => setSuccess(''), 5000);
+          stopPolling();
+        } else if (pollCount >= maxPolls) {
+          setError('Crawl result not found within expected time');
+          setTimeout(() => setError(''), 5000);
+          stopPolling();
+        }
+      } catch (err) {
+        stopPolling();
+      }
+    }, 2000); // Poll every 2 seconds
+  };
+
+  const stopPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+      setLatestCrawlId(null);
     }
   };
 
   useEffect(() => {
     fetchResults();
-  }, []);
+    return () => stopPolling(); // Cleanup on unmount
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setIsLoading(true);
+    stopPolling(); // Stop any existing polling
 
     try {
-      const token = localStorage.getItem('access_token') || '';
-      await crawl({ url }, token);
-      setSuccess('Crawl request submitted successfully!');
+      const response = await crawl({ url }, token);
+      setSuccess(response.message);
       setUrl('');
-      fetchResults();
+      pollResults(response.data.id); // Start polling for results
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit crawl request');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit crawl request';
+      setError(errorMessage.includes('Invalid') ? errorMessage : 'Failed to submit crawl request');
     } finally {
       setIsLoading(false);
+      setTimeout(() => {
+        setError('');
+        setSuccess('');
+      }, 5000);
     }
   };
 
-  const handleSort = (column: keyof ExtendedResult) => {
-    const sorted = [...results].sort((a, b) => {
-      const aValue = a[column];
-      const bValue = b[column];
-      if (typeof aValue === 'string') {
-        return aValue.localeCompare(bValue as string);
-      }
-      return (aValue as number) - (bValue as number);
-    });
-    setResults(sorted);
-  };
-
-  const handleFilter = (query: string) => {
-    setResults((prev) =>
-      prev.filter((result) => result.title.toLowerCase().startsWith(query.toLowerCase()))
-    );
-  };
-
   const handleSignOut = () => {
+    stopPolling();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     window.location.href = '/login';
@@ -182,7 +200,7 @@ const DashboardPage: React.FC = () => {
             <form onSubmit={handleSubmit} style={{ display: 'flex', gap: theme.spacing.md, alignItems: 'stretch' }}>
               <InputBox
                 type="url"
-                placeholder="Enter URL (e.g., https://en.wikipedia.org/wiki/Go_(programming_language))"
+                placeholder="Enter URL"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 required
@@ -201,12 +219,13 @@ const DashboardPage: React.FC = () => {
           <SectionTitle>Results Dashboard</SectionTitle>
           <Table
             results={results}
-            onSort={handleSort}
-            onFilter={handleFilter}
             onPageChange={fetchResults}
             page={page}
-            size={size}
-            total={total}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            hasNext={hasNext}
+            hasPrev={hasPrev}
           />
         </Section>
       </PageWrapper>

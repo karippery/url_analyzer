@@ -3,7 +3,13 @@ interface CrawlRequest {
 }
 
 interface CrawlResponse {
-  message: string; // Adjust based on your API response
+  data: {
+    id: number;
+    url: string;
+    status: string;
+    created_at: string;
+  };
+  message: string;
 }
 
 export interface Result {
@@ -27,11 +33,69 @@ export interface Result {
 
 interface ResultsResponse {
   data: Result[];
-  page: number;
-  size: number;
+  pagination: {
+    currentPage: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  message: string;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api';
+interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+}
+
+interface RefreshResponse {
+  access_token: string;
+  refresh_token: string;
+}
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
+
+export const login = async (data: LoginRequest): Promise<LoginResponse> => {
+  const response = await fetch(`${API_BASE_URL}/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to login');
+  }
+
+  return response.json();
+};
+
+export const refreshToken = async (refreshToken: string): Promise<RefreshResponse> => {
+  const response = await fetch(`${API_BASE_URL}/refresh`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to refresh token');
+  }
+
+  return response.json();
+};
 
 export const crawl = async (data: CrawlRequest, token: string): Promise<CrawlResponse> => {
   const response = await fetch(`${API_BASE_URL}/crawl`, {
@@ -53,7 +117,7 @@ export const crawl = async (data: CrawlRequest, token: string): Promise<CrawlRes
 };
 
 export const getResults = async (page: number = 1, size: number = 10, token: string): Promise<ResultsResponse> => {
-  const response = await fetch(`${API_BASE_URL}/results?page=${page}&size=${size}`, {
+  const response = await fetch(`${API_BASE_URL}/results?page=${page}&pageSize=${size}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -64,7 +128,7 @@ export const getResults = async (page: number = 1, size: number = 10, token: str
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to fetch results');
+    throw new Error(errorData.error || 'Failed to fetch results', { cause: { status: response.status } });
   }
 
   return response.json();
