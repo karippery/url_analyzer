@@ -16,6 +16,8 @@ services:
       - DB_PASSWORD=password
       - DB_NAME=url_analyzer
       - DB_PORT=3306
+      - SERVER_ADDRESS=:8080
+      - WORKER_POLL_INTERVAL=5s
     restart: unless-stopped
     networks:
       - app-network
@@ -42,6 +44,7 @@ services:
 
 volumes:
   mysql_data:
+    name: url_analyzer_mysql_data
 
 networks:
   app-network:

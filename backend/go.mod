@@ -9,7 +9,15 @@ require (
 	gorm.io/gorm v1.25.5
 )
 
-require github.com/golang-jwt/jwt/v4 v4.5.2
+require (
+	github.com/golang-jwt/jwt/v4 v4.5.2
+	github.com/rs/zerolog v1.34.0
+)
+
+require (
+	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+)
 
 require (
 	github.com/bytedance/sonic v1.9.1 // indirect
@@ -34,7 +42,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.14.0
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
