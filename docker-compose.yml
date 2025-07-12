@@ -4,33 +4,45 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: backend
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     depends_on:
-      - mysql
+      db:
+        condition: service_healthy
     environment:
-      - DB_HOST=mysql
+      - DB_HOST=db
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=url_analyzer
       - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASS=yourpassword
-      - DB_NAME=webcrawler
+    restart: unless-stopped
+    networks:
+      - app-network
 
-  frontend:
-    build:
-      context: ./frontend
-    container_name: frontend
-    ports:
-      - "3000:80"  # React dev usually runs on 3000, nginx serves on 80
-
-  mysql:
+  db:
     image: mysql:8.0
-    container_name: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=url_analyzer
     ports:
       - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: yourpassword
-      MYSQL_DATABASE: webcrawler
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - app-network
 
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
