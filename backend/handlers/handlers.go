@@ -37,9 +37,11 @@ func (h *Handler) SubmitURL(c *gin.Context) {
 }
 
 func (h *Handler) GetResults(c *gin.Context) {
+	// Parse pagination parameters with defaults
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
 
+	// Validate parameters
 	if page < 1 {
 		page = 1
 	}
@@ -47,15 +49,23 @@ func (h *Handler) GetResults(c *gin.Context) {
 		pageSize = 10
 	}
 
-	results, err := h.repo.GetCrawlResults(page, pageSize)
+	// Get paginated results from repository
+	results, totalItems, totalPages, err := h.repo.GetPaginatedResults(page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch results"})
 		return
 	}
 
+	// Return response with pagination metadata
 	c.JSON(http.StatusOK, gin.H{
 		"data": results,
-		"page": page,
-		"size": pageSize,
+		"pagination": gin.H{
+			"currentPage": page,
+			"pageSize":    pageSize,
+			"totalItems":  totalItems,
+			"totalPages":  totalPages,
+			"hasNext":     page < int(totalPages),
+			"hasPrev":     page > 1,
+		},
 	})
 }

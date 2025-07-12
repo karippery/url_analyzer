@@ -43,3 +43,31 @@ func (r *DBRepository) UpdateCrawlRequestStatus(id uint, status string) error {
 func (r *DBRepository) SaveCrawlResult(result *models.CrawlResult) error {
 	return r.DB.Create(result).Error
 }
+
+func (r *DBRepository) GetPaginatedResults(page, pageSize int) ([]models.CrawlResult, int64, int64, error) {
+	var results []models.CrawlResult
+	var totalItems int64
+
+	// Count total records
+	if err := r.DB.Model(&models.CrawlResult{}).Count(&totalItems).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	// Calculate total pages
+	totalPages := totalItems / int64(pageSize)
+	if totalItems%int64(pageSize) != 0 {
+		totalPages++
+	}
+
+	// Get paginated results
+	offset := (page - 1) * pageSize
+	if err := r.DB.Preload("CrawlRequest").
+		Offset(offset).
+		Limit(pageSize).
+		Order("created_at DESC").
+		Find(&results).Error; err != nil {
+		return nil, 0, 0, err
+	}
+
+	return results, totalItems, totalPages, nil
+}
