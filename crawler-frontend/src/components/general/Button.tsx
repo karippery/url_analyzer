@@ -1,6 +1,5 @@
-// src/components/Button.tsx
 import styled from 'styled-components';
-import { theme } from '../theme';
+import { theme } from '../../theme';
 
 const StyledButton = styled.button`
   padding: ${theme.spacing.sm} ${theme.spacing.md};
@@ -27,11 +26,12 @@ interface ButtonProps {
   disabled?: boolean;
   isLoading?: boolean;
   children: React.ReactNode;
+  onClick?: () => void;
 }
 
-const Button: React.FC<ButtonProps> = ({ type, disabled, isLoading, children }) => {
+const Button: React.FC<ButtonProps> = ({ type, disabled, isLoading, children, onClick }) => {
   return (
-    <StyledButton type={type} disabled={disabled || isLoading}>
+    <StyledButton type={type} disabled={disabled || isLoading} onClick={onClick}>
       {children}
     </StyledButton>
   );

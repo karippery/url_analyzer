@@ -1,10 +1,10 @@
 // src/components/AuthForm.tsx
 import React from 'react';
 import styled from 'styled-components';
-import { theme } from '../theme';
-import InputBox from './InputBox';
-import Button from './Button';
-import Message from './Message';
+import { theme } from '../../theme';
+import InputBox from '../general/InputBox';
+import Button from '../general/Button';
+import Message from '../general/Message';
 
 const Form = styled.form`
   display: flex;

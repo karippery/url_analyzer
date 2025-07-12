@@ -1,4 +1,3 @@
-// src/api/auth.ts
 interface LoginRequest {
   username: string;
   password: string;

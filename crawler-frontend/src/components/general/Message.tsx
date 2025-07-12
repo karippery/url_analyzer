@@ -1,6 +1,5 @@
-// src/components/Message.tsx
 import styled from 'styled-components';
-import { theme } from '../theme';
+import { theme } from '../../theme';
 
 const StyledMessage = styled.p<{ $isError?: boolean }>`
   color: ${({ $isError }) => ($isError ? theme.colors.error : theme.colors.secondary)};

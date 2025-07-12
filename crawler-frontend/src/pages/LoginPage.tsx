@@ -1,9 +1,8 @@
-// src/pages/LoginPage.tsx
 import React, { useState } from 'react';
-import AuthContainer from '../components/AuthContainer';
-import AuthCard from '../components/AuthCard';
-import AuthForm from '../components/AuthForm';
-import AuthLink from '../components/AuthLink';
+import AuthContainer from '../components/auth/AuthContainer';
+import AuthCard from '../components/auth/AuthCard';
+import AuthForm from '../components/auth/AuthForm';
+import AuthLink from '../components/auth/AuthLink';
 import { login } from '../api/auth';
 
 interface LoginResponse {

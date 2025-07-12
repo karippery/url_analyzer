@@ -1,7 +1,7 @@
 // src/components/AuthLink.tsx
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
-import { theme } from '../theme';
+import { theme } from '../../theme';
 
 const AuthLink = styled.div`
   text-align: center;

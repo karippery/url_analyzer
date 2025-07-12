@@ -1,6 +1,6 @@
 // src/components/AuthCard.tsx
 import styled from 'styled-components';
-import { theme } from '../theme';
+import { theme } from '../../theme';
 
 const AuthCard = styled.div`
   background: ${theme.colors.background};

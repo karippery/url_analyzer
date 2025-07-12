@@ -1,6 +1,5 @@
-// src/components/AuthContainer.tsx
 import styled from 'styled-components';
-import { theme } from '../theme';
+import { theme } from '../../theme';
 
 const AuthContainer = styled.div`
   display: flex;
