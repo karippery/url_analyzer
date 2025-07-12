@@ -46,22 +46,6 @@ func (h *Handler) SubmitURL(c *gin.Context) {
 
 // GetResults handles retrieval of paginated crawl results.
 func (h *Handler) GetResults(c *gin.Context) {
-<<<<<<< HEAD
-	// Parse pagination parameters with defaults
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
-
-	// Validate parameters
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 10
-	}
-
-	// Get paginated results from repository
-	results, totalItems, totalPages, err := h.repo.GetPaginatedResults(page, pageSize)
-=======
 	page, err := parseQueryInt(c, "page", repository.DefaultPage)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page parameter"})
@@ -76,13 +60,11 @@ func (h *Handler) GetResults(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	results, totalItems, totalPages, err := h.repo.GetPaginatedResults(ctx, page, pageSize)
->>>>>>> 9d074d4dc77437dd54d70b912e8bb856a34fa6e7
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch results"})
 		return
 	}
 
-	// Return response with pagination metadata
 	c.JSON(http.StatusOK, gin.H{
 		"data": results,
 		"pagination": gin.H{
@@ -93,10 +75,7 @@ func (h *Handler) GetResults(c *gin.Context) {
 			"hasNext":     page < int(totalPages),
 			"hasPrev":     page > 1,
 		},
-<<<<<<< HEAD
-=======
 		"message": "Results fetched successfully",
->>>>>>> 9d074d4dc77437dd54d70b912e8bb856a34fa6e7
 	})
 }
 

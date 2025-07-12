@@ -17,14 +17,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-<<<<<<< HEAD
-
-	"time"
-
-=======
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
->>>>>>> 9d074d4dc77437dd54d70b912e8bb856a34fa6e7
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
