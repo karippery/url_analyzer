@@ -1,56 +1,116 @@
 package worker
 
 import (
-	"log"
+	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"url_analyzer/backend/crawler"
 	"url_analyzer/backend/models"
 	"url_analyzer/backend/repository"
+
+	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
+// Worker processes crawl requests from the database.
 type Worker struct {
 	repo    *repository.DBRepository
 	crawler *crawler.Crawler
+	ctx     context.Context
+	cancel  context.CancelFunc
+	wg      sync.WaitGroup
 }
 
-func NewWorker(repo *repository.DBRepository) *Worker {
+// Config holds worker configuration settings.
+type Config struct {
+	PollInterval time.Duration // Interval to check for new queued requests
+}
+
+// NewWorker creates a new Worker with the provided repository and default configuration.
+func NewWorker(repo *repository.DBRepository, cfg *Config) *Worker {
+	if cfg == nil {
+		cfg = &Config{
+			PollInterval: 5 * time.Second,
+		}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Worker{
 		repo:    repo,
 		crawler: crawler.NewCrawler(),
+		ctx:     ctx,
+		cancel:  cancel,
 	}
 }
 
-func (w *Worker) Start() {
+// Start begins processing crawl requests in a loop until stopped.
+func (w *Worker) Start() error {
+	w.wg.Add(1)
 	go func() {
+		defer w.wg.Done()
+		ticker := time.NewTicker(5 * time.Second) // Use config.PollInterval in a real implementation
+		defer ticker.Stop()
+
 		for {
-			// Get next queued request
-			var request models.CrawlRequest
-			if err := w.repo.DB.Where("status = ?", "queued").First(&request).Error; err == nil {
-				// Process the request
-				w.processRequest(&request)
-			} else {
-				// No queued requests, sleep for a while
-				time.Sleep(5 * time.Second)
+			select {
+			case <-w.ctx.Done():
+				log.Info().Msg("Worker stopped")
+				return
+			case <-ticker.C:
+				if err := w.processNextRequest(); err != nil {
+					log.Error().Err(err).Msg("Failed to process next request")
+				}
 			}
 		}
 	}()
+	log.Info().Msg("Worker started")
+	return nil
 }
 
-func (w *Worker) processRequest(request *models.CrawlRequest) {
-	// Update status to running
-	w.repo.UpdateCrawlRequestStatus(request.ID, "running")
+// Stop gracefully shuts down the worker.
+func (w *Worker) Stop() {
+	w.cancel()
+	w.wg.Wait()
+	log.Info().Msg("Worker shutdown complete")
+}
 
-	// Process the URL
+// processNextRequest retrieves and processes the next queued crawl request.
+func (w *Worker) processNextRequest() error {
+	var request models.CrawlRequest
+	err := w.repo.DB.WithContext(w.ctx).
+		Where("status = ?", repository.StatusQueued).
+		First(&request).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			log.Debug().Msg("No queued crawl requests found")
+			return nil // No queued requests, silently return
+		}
+		return fmt.Errorf("failed to fetch queued request: %w", err)
+	}
+
+	return w.processRequest(w.ctx, &request)
+}
+
+// processRequest processes a single crawl request.
+func (w *Worker) processRequest(ctx context.Context, request *models.CrawlRequest) error {
+	// Update status to processing
+	if err := w.repo.UpdateCrawlRequestStatus(ctx, request.ID, repository.StatusProcessing); err != nil {
+		return fmt.Errorf("failed to update status to processing for request ID %d: %w", request.ID, err)
+	}
+
+	// Crawl the URL
 	data, err := w.crawler.Crawl(request.URL)
 	if err != nil {
-		log.Printf("Error crawling %s: %v", request.URL, err)
-		w.repo.UpdateCrawlRequestStatus(request.ID, "error")
-		return
+		log.Error().Err(err).Str("url", request.URL).Msg("Failed to crawl URL")
+		if updateErr := w.repo.UpdateCrawlRequestStatus(ctx, request.ID, repository.StatusFailed); updateErr != nil {
+			log.Error().Err(updateErr).Uint("request_id", request.ID).Msg("Failed to update status to failed")
+		}
+		return fmt.Errorf("failed to crawl URL %s: %w", request.URL, err)
 	}
 
 	// Save results
-	result := models.CrawlResult{
+	result := &models.CrawlResult{
 		CrawlRequestID: request.ID,
 		HTMLVersion:    data.HTMLVersion,
 		Title:          data.Title,
@@ -65,14 +125,26 @@ func (w *Worker) processRequest(request *models.CrawlRequest) {
 		BrokenLinks:    data.BrokenLinks,
 		HasLoginForm:   data.HasLoginForm,
 		ProcessingTime: data.ProcessingTime,
+		CreatedAt:      time.Now(),
 	}
 
-	if err := w.repo.SaveCrawlResult(&result); err != nil {
-		log.Printf("Error saving results for %s: %v", request.URL, err)
-		w.repo.UpdateCrawlRequestStatus(request.ID, "error")
-		return
+	if err := w.repo.SaveCrawlResult(ctx, result); err != nil {
+		log.Error().Err(err).Str("url", request.URL).Msg("Failed to save crawl result")
+		if updateErr := w.repo.UpdateCrawlRequestStatus(ctx, request.ID, repository.StatusFailed); updateErr != nil {
+			log.Error().Err(updateErr).Uint("request_id", request.ID).Msg("Failed to update status to failed")
+		}
+		return fmt.Errorf("failed to save crawl result for URL %s: %w", request.URL, err)
 	}
 
-	// Update status to done
-	w.repo.UpdateCrawlRequestStatus(request.ID, "done")
+	// Update status to completed
+	if err := w.repo.UpdateCrawlRequestStatus(ctx, request.ID, repository.StatusCompleted); err != nil {
+		log.Error().Err(err).Uint("request_id", request.ID).Msg("Failed to update status to completed")
+		return fmt.Errorf("failed to update status to completed for request ID %d: %w", request.ID, err)
+	}
+
+	log.Info().
+		Str("url", request.URL).
+		Uint("request_id", request.ID).
+		Msg("Successfully processed crawl request")
+	return nil
 }
