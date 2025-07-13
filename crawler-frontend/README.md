@@ -14,7 +14,7 @@ URL Analyzer is a frontend web application that enables users to submit URLs for
 ## Technologies
 - **React**: JavaScript library for building the user interface.
 - **TypeScript**: Ensures type safety and enhances developer experience.
-- **Styled-Components**: CSS-in-JS for component-scoped styling.
+- **Styled-Components**: CSS-in-JS and MUI.
 - **React-ChartJS-2 & Chart.js**: Renders donut charts in the details modal for link analysis.
 - **Node.js & npm**: Manages frontend dependencies and runs the development server.
 
@@ -47,24 +47,5 @@ URL Analyzer is a frontend web application that enables users to submit URLs for
   - Authentication uses tokens stored in localStorage.
   - Tokens are cleared on sign-out, redirecting to the `/login` page.
 
-## Setup Instructions
-1. **Clone the Repository**:
-   - Clone the frontend repository to your local machine.
-2. **Install Dependencies**:
-   - Navigate to the frontend directory.
-   - Run `npm install` to install dependencies.
-3. **Start the Development Server**:
-   - Run `npm start` to launch the app.
-   - Access the app at `http://localhost:3000`.
-4. **Configuration**:
-   - Ensure the frontend is configured to communicate with the backend API (e.g., `http://localhost:8080/api`) in `src/api/crawler.ts`.
-   - Use test credentials (`username: test`, `password: test`) for login.
 
-## Usage
-1. Open the app at `http://localhost:3000`.
-2. Register a new account or log in with existing credentials.
-3. On the dashboard, enter a URL in the long input field and click "Send".
-4. View results in the table, which updates automatically after submission.
-5. Use the filter input to search by title, sort columns, or navigate pages.
-6. Click a table row to view detailed analysis in a modal, including a donut chart and broken links.
 

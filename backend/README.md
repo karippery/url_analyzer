@@ -25,7 +25,6 @@ A secure, high-performance web crawler and analysis API with JWT authentication.
 - **Database**: MySQL 8.0
 - **ORM**: GORM
 - **Containerization**: Docker
-- **Concurrency**: Goroutines
 
 ## API Documentation
 
