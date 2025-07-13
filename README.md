@@ -1,4 +1,4 @@
-# url_analyzer# URL Analyzer
+#  URL Analyzer
 
 A full-stack web app to crawl and analyze URLs, with a Go/Gin backend and React/MUI frontend, containerized with Docker.
 
