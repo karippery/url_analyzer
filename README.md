@@ -41,3 +41,5 @@ A full-stack web app to crawl and analyze URLs, with a Go/Gin backend and React/
 - Log in: [http://localhost:3000/login](http://localhost:3000/login)
 - Dashboard: [http://localhost:3000/dashboard](http://localhost:3000/dashboard) (after login)
 
+## ouput
+<img src="Animation.gif" alt="Alt text" width="50%">
